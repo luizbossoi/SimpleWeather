@@ -20,7 +20,7 @@ import Gdk from "gi://Gdk";
 import Gtk from "gi://Gtk";
 import Gio from "gi://Gio";
 import Adw from "gi://Adw";
-import { gettext as _g } from "../gettext.js";
+import { gettext as _g, onLanguageChange } from "../gettext.js";
 import { detailName, Details, displayDetail } from "../details.js";
 import { Condition, Weather, gettextCondit } from "../weather.js";
 import { Direction, Percentage, Pressure, RainMeasurement, Speed, SpeedAndDir, Temp, Countdown } from "../units.js";
@@ -259,6 +259,32 @@ export class DetailsPage extends Adw.PreferencesPage {
         panelGroup.add(asCountdownRow);
 
         this.add(panelGroup);
+
+        // Update all translatable content when language changes
+        onLanguageChange(() => {
+            this.title = _g("Details");
+            curGroup.title = _g("Pop-Up");
+            curGroup.description = _g("Drag-and-drop from bottom to configure the pop-up");
+            panelGroup.title = _g("Panel");
+            panelDetailRow.title = _g("Panel Detail");
+            secondPanelDetailRow.title = _g("Secondary Panel Detail");
+            showIconRow.title = _g("Show Condition Icon");
+            showSunTimeRow.title = _g("Show Sunrise/Sunset");
+            asCountdownRow.title = _g("Use Countdown for Sun");
+            
+            // Update details dropdown
+            const savedPanelDetail = panelDetailRow.selected;
+            const savedSecondPanelDetail = secondPanelDetailRow.selected;
+            
+            const updatedDetailsNames = [ _g("None") ];
+            for(let d of detailsArr.slice(1)) {
+                updatedDetailsNames.push(_g(detailName[d] as string));
+            }
+            
+            detailsModel.splice(0, detailsModel.get_n_items(), updatedDetailsNames);
+            panelDetailRow.selected = savedPanelDetail;
+            secondPanelDetailRow.selected = savedSecondPanelDetail;
+        });
     }
 
     #setDetail(lbl : Gtk.Label, idx : number, detail : Details) : void {

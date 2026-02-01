@@ -470,33 +470,32 @@ msgid "Order in Panel"
 msgstr "Ordem no painel"
 
 #: src/preferences/generalPage.ts:342
-#, fuzzy
 msgid "Pop-Up Offset"
-msgstr "Pop-up"
+msgstr "Deslocamento do Pop-up"
 
 #: src/preferences/generalPage.ts:343
 msgid "Horizontal pop-up offset from 0–100."
-msgstr ""
+msgstr "Deslocamento horizontal do pop-up de 0 a 100."
 
 #: src/preferences/generalPage.ts:383
 msgid "Use Symbolic Icons in Panel"
-msgstr ""
+msgstr "Usar ícones simbólicos no painel"
 
 #: src/preferences/generalPage.ts:393
 msgid "Always Use Packaged Icons"
-msgstr ""
+msgstr "Sempre usar ícones empacotados"
 
 #: src/preferences/generalPage.ts:404
 msgid "Show Refresh Button"
-msgstr ""
+msgstr "Mostrar botão de atualizar"
 
 #: src/preferences/generalPage.ts:415
 msgid "Hide Error Popup"
-msgstr ""
+msgstr "Ocultar pop-up de erro"
 
 #: src/preferences/generalPage.ts:416
 msgid "If the popup just says Error, don't even show it."
-msgstr ""
+msgstr "Se o pop-up apenas exibir 'erro', não mostrá-lo."
 
 #: src/preferences/locationsPage.ts:57 src/preferences/locationsPage.ts:80
 msgid "Locations"

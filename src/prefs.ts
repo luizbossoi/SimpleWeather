@@ -25,7 +25,7 @@ import { GeneralPage } from "./preferences/generalPage.js";
 import { LocationsPage } from "./preferences/locationsPage.js";
 import { ExtensionMetadata } from "resource:///org/gnome/shell/extensions/extension.js";
 import { AboutPage } from "./preferences/aboutPage.js";
-import { setUpGettext, setLanguage } from "./gettext.js";
+import { setUpGettext, setLanguage, onLanguageChange } from "./gettext.js";
 import { gettext as prefsGettext } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 import { initLocales } from "./lang.js";
 import { gettext as _g } from "./gettext.js";
@@ -43,13 +43,19 @@ export default class SimpleWeatherPreferences extends ExtensionPreferences {
     async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
         const settings = this.getSettings();
         
-        // Load language setting and apply it before setting up gettext
+        // Get locale directory and domain from metadata FIRST
+        const localeDir = this.#metadata.dir.get_child('locale').get_path();
+        const domain = this.#metadata['gettext-domain'] || this.#metadata.uuid;
+        
+        // Setup gettext with locale directory and domain
+        setUpGettext(prefsGettext, localeDir || undefined, domain);
+        
+        // NOW load and apply the language setting
         const languageCode = settings.get_string("language");
         if (languageCode) {
             setLanguage(languageCode);
         }
         
-        setUpGettext(prefsGettext);
         settings.delay();
         this.checkLocales(window, settings);
 
@@ -64,7 +70,7 @@ export default class SimpleWeatherPreferences extends ExtensionPreferences {
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         );
 
-        window.add(new GeneralPage(settings));
+        window.add(new GeneralPage(settings, window));
         window.add(new LocationsPage(settings, window));
         window.add(new DetailsPage(settings));
         window.add(new AboutPage(settings, this.#metadata, window));

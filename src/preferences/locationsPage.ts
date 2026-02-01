@@ -25,7 +25,7 @@ import { Config, writeGTypeAS } from "../config.js";
 import { editLocation } from "./editLocation.js";
 import { Location } from "../location.js";
 import { UserInputError } from "../errors.js";
-import { gettext as _g } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
+import { gettext as _g, onLanguageChange } from "../gettext.js";
 import { searchDialog } from "./search.js";
 
 const ICON_SELECTED = "radio-checked-symbolic";
@@ -138,6 +138,24 @@ export class LocationsPage extends Adw.PreferencesPage {
         this.#locGroup.add(bottomBox);
 
         this.#guiRefreshList();
+
+        // Update all translatable content when language changes
+        onLanguageChange(() => {
+            this.title = _g("Locations");
+            this.#locGroup.title = _g("Locations");
+            
+            const addButtonContent = addButton.get_child() as Adw.ButtonContent;
+            if (addButtonContent) addButtonContent.label = _g("Add");
+            
+            const moveUpContent = this.#moveUp.get_child() as Adw.ButtonContent;
+            if (moveUpContent) moveUpContent.label = _g("Move Up");
+            
+            const moveDownContent = this.#moveDown.get_child() as Adw.ButtonContent;
+            if (moveDownContent) moveDownContent.label = _g("Move Down");
+            
+            const addMyLocContent = addMyLocBtn.get_child() as Adw.ButtonContent;
+            if (addMyLocContent) addMyLocContent.label = _g("Add Here");
+        });
     }
 
     #guiRemoveAll() {

@@ -20,7 +20,7 @@ import Gtk from "gi://Gtk";
 import Gio from "gi://Gio";
 import Adw from "gi://Adw";
 import { ExtensionMetadata } from "resource:///org/gnome/shell/extensions/extension.js";
-import { gettext as _g } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
+import { gettext as _g, onLanguageChange } from "../gettext.js";
 // @ts-ignore
 import { PACKAGE_VERSION } from "resource:///org/gnome/Shell/Extensions/js/misc/config.js";
 import { getLocales } from "../lang.js";
@@ -75,9 +75,10 @@ export class AboutPage extends Adw.PreferencesPage {
         infoGroup.add(versionRow);
 
         const gitHash = GITHASH();
+        let gitHashRow: Adw.ActionRow | undefined;
         // Only show git hash if it's not the release version
         if(versionName?.endsWith("-dev") && gitHash) {
-            const gitHashRow = new Adw.ActionRow({
+            gitHashRow = new Adw.ActionRow({
                 title: _g("Git Hash")
             });
             gitHashRow.add_suffix(new Gtk.Label({
@@ -157,6 +158,20 @@ export class AboutPage extends Adw.PreferencesPage {
         bottomBox.append(credits);
         bottomGroup.add(bottomBox);
         this.add(bottomGroup);
+
+        // Update all translatable content when language changes
+        onLanguageChange(() => {
+            this.title = _g("About");
+            versionRow.title = _g("SimpleWeather Version");
+            if (gitHashRow) {
+                gitHashRow.title = _g("Git Hash");
+            }
+            settingsRow.title = _g("Settings");
+            settingsBtnContent.label = _g("Copy");
+            
+            const creditsLabel = credits.get_child() as Gtk.Label;
+            if (creditsLabel) creditsLabel.label = _g("Credits");
+        });
     }
 
 }

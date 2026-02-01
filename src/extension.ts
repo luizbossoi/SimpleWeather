@@ -31,7 +31,7 @@ import { Weather } from "./weather.js";
 import { delayTask, removeSourceIfTruthy, isNoInternet } from "./utils.js";
 import { displayTemp, displayTime, initLocales } from "./lang.js";
 import { freeMyLocation, setUpMyLocation } from "./myLocation.js";
-import { setUpGettext, gettext as _g, setLanguage } from "./gettext.js";
+import { setUpGettext, gettext as _g, setLanguage, onLanguageChange } from "./gettext.js";
 import { Popup } from "./popup.js";
 import { PopupMenu } from "resource:///org/gnome/shell/ui/popupMenu.js";
 import { showWelcome, showManualConfig } from "./welcome.js";
@@ -65,6 +65,7 @@ export default class SimpleWeatherExtension extends Extension {
 
     #resolverFailCount : number = 0;
     #indicIsErrored : boolean = false;
+    #unsubscribeLanguageChange? : () => void;
 
     /**
      * Waits for the layout manager's starting up property to be false.
@@ -97,20 +98,23 @@ export default class SimpleWeatherExtension extends Extension {
         // Set up a couple necessaary things already
         this.#gsettings = this.getSettings();
         
-        // Load language setting and apply it BEFORE anything else
-        const languageCode = this.#gsettings.get_string("language");
-        setLanguage(languageCode);
-        
-        // Get locale directory and domain from metadata
+        // Get locale directory and domain from metadata FIRST
         const localeDir = this.metadata.dir.get_child('locale').get_path();
         const domain = this.metadata['gettext-domain'] || this.metadata.uuid;
         
+        // Setup gettext with locale directory and domain
         setUpGettext(
             this.gettext.bind(this), 
             localeDir || undefined, 
             domain
         );
         initLocales();
+        
+        // NOW load and apply the language setting
+        const languageCode = this.#gsettings.get_string("language");
+        if (languageCode) {
+            setLanguage(languageCode);
+        }
         
         // Call an async enable method
         this.#asyncEnable().catch(e => {
@@ -164,7 +168,17 @@ export default class SimpleWeatherExtension extends Extension {
         this.#popup = new Popup({
             config: this.#config!,
             metadata: this.metadata,
-            openPreferences: this.openPreferences.bind(this),
+            openPreferences: () => {
+                // Wrap openPreferences to handle promise rejection when window is already open
+                // TypeScript thinks openPreferences returns void, but at runtime it returns a Promise
+                const result = this.openPreferences() as any;
+                // Add catch handler to suppress unhandled promise rejection warning
+                if (result && typeof result.catch === 'function') {
+                    result.catch((e: any) => {
+                        console.debug('[SimpleWeather] Preferences window may already be open:', e);
+                    });
+                }
+            },
             menu: indic.menu as PopupMenu,
             settings: this.#gsettings!,
             refreshWeather: this.#updateWeatherAsync.bind(this)
@@ -253,6 +267,17 @@ export default class SimpleWeatherExtension extends Extension {
         this.#config!.onSymbolicIconsChanged(this.#updateGui.bind(this));
         this.#config!.onAlwaysPackagedIconsChanged(this.#updateGui.bind(this));
         
+        // Listen for language changes and rebuild the interface
+        this.#unsubscribeLanguageChange = onLanguageChange(() => {
+            this.#rebuildIndicator();
+        });
+        
+        // Listen for language setting changes in gsettings
+        this.#gsettings!.connect('changed::language', () => {
+            const newLanguageCode = this.#gsettings!.get_string("language");
+            setLanguage(newLanguageCode);
+        });
+        
         // Note: Language changes are applied on next extension reload
         // Gettext loads translation catalogs only once at initialization
         
@@ -304,6 +329,12 @@ export default class SimpleWeatherExtension extends Extension {
         this.#fetchLoopId = removeSourceIfTruthy(this.#fetchLoopId);
         this.#delayFetchId = removeSourceIfTruthy(this.#delayFetchId);
         this.#waitLayoutId = removeSourceIfTruthy(this.#waitLayoutId);
+        
+        // Unsubscribe from language change notifications
+        if (this.#unsubscribeLanguageChange) {
+            this.#unsubscribeLanguageChange();
+            this.#unsubscribeLanguageChange = undefined;
+        }
 
         if(this.#popup && this.#indicator) {
             this.#popup.destroy(this.#indicator.menu as PopupMenu);
