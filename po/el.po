@@ -14,7 +14,7 @@ msgstr ""
 "X-Crowdin-Project: simpleweather\n"
 "X-Crowdin-Project-ID: 798380\n"
 "X-Crowdin-Language: el\n"
-"X-Crowdin-File: simple-weather@romanlefler.com.pot\n"
+"X-Crowdin-File: simple-weather@luizbossoi.com.br.pot\n"
 "X-Crowdin-File-ID: 2\n"
 
 #: src/autoConfig.ts:59 src/location.ts:53 src/location.ts:63

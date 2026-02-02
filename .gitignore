@@ -3,7 +3,7 @@ build/
 dist/
 
 node_modules/
-po/simple-weather@romanlefler.com.pot
+po/simple-weather@luizbossoi.com.br.pot
 
 .readme-tools/
 

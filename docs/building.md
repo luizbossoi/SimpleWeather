@@ -21,7 +21,7 @@ make
 
 ## Create Zip Archive
 
-Create zip archive of extension to `dist/simple-weather@romanlefler.com-vVERSION.zip`:
+Create zip archive of extension to `dist/simple-weather@luizbossoi.com.br-vVERSION.zip`:
 
 ```shell
 make pack

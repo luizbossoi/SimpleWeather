@@ -7,13 +7,13 @@
     "shell",
     "extension"
   ],
-  "homepage": "https://github.com/romanlefler/SimpleWeather#readme",
+  "homepage": "https://github.com/luizbossoi/SimpleWeather#readme",
   "bugs": {
-    "url": "https://github.com/romanlefler/SimpleWeather/issues"
+    "url": "https://github.com/luizbossoi/SimpleWeather/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/romanlefler/SimpleWeather.git"
+    "url": "git+https://github.com/luizbossoi/SimpleWeather.git"
   },
   "license": "GPL-3.0-or-later",
   "author": "Roman Lefler",
