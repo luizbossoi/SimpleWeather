@@ -14,7 +14,7 @@ msgstr ""
 "X-Crowdin-Project: simpleweather\n"
 "X-Crowdin-Project-ID: 798380\n"
 "X-Crowdin-Language: en\n"
-"X-Crowdin-File: simple-weather@romanlefler.com.pot\n"
+"X-Crowdin-File: simple-weather@luizbossoi.com.br.pot\n"
 "X-Crowdin-File-ID: 2\n"
 "X-Generator: Poedit 3.5\n"
 

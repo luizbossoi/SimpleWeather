@@ -2,6 +2,14 @@
 
 A highly configurable GNOME shell extension for viewing the weather.
 
+## About This Fork
+
+This is a fork of the [original SimpleWeather extension](https://github.com/romanlefler/SimpleWeather) by Roman Lefler. This fork follows a different development path, implementing features and changes that are not present in the original extension.
+
+We will sync with the upstream fork whenever possible, but eventually this may become a standalone hard fork as the development paths diverge further.
+
+If you're looking for the original extension, please visit [the original repository](https://github.com/romanlefler/SimpleWeather).
+
 ![Screenshot](./docs/screenshot.png)
 
 Support for themes, the following screenshot uses the *Immersive* theme:
@@ -47,7 +55,7 @@ source code information.
 
 Everybody is encouraged to make pull requests to contribute
 to the source code. If you plan to add a feature, it is a good
-idea to make an [issue](https://github.com/romanlefler/SimpleWeather/issues)
+idea to make an [issue](https://github.com/luizbossoi/SimpleWeather/issues)
 first and label it as a feature request and add that you are willing
 to do it (and perhaps how).
 
