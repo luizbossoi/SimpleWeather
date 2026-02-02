@@ -487,7 +487,8 @@ export class Popup {
 
         }
 
-        this.#placeLabel.text = w.loc.getName();
+        const locationName = w.loc.getName();
+        this.#placeLabel.text = locationName.length > 50 ? locationName.substring(0, 47) + "..." : locationName;
 
         const details = this.#config.getDetailsList();
         const detailPossibilities = Object.values(details);
