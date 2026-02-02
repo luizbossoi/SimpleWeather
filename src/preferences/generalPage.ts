@@ -19,8 +19,10 @@ import GObject from "gi://GObject";
 import Gtk from "gi://Gtk";
 import Gio from "gi://Gio";
 import Adw from "gi://Adw";
-import { gettext as _g } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
+import { gettext as _g, onLanguageChange } from "../gettext.js";
 import { WeatherProviderNames } from "../providers/provider.js";
+import { AVAILABLE_LANGUAGES, getLanguageIndex } from "../languages.js";
+import { setLanguage } from "../gettext.js";
 
 function setVisibilites(value : boolean, ...widgets : Gtk.Widget[]) {
     for(let w of widgets) w.visible = value;
@@ -32,12 +34,31 @@ export class GeneralPage extends Adw.PreferencesPage {
         GObject.registerClass(this);
     }
 
-    constructor(settings : Gio.Settings) {
+    constructor(settings : Gio.Settings, window: Adw.PreferencesWindow) {
 
         super({
             title: _g("General"),
             icon_name: "preferences-system-symbolic"
         });
+
+        // Language Selection Group
+        const languageGroup = new Adw.PreferencesGroup({
+            title: _g("Language"),
+            description: _g("Select the interface language")
+        });
+
+        const languageNames = AVAILABLE_LANGUAGES.map(lang => lang.name);
+        const languageModel = new Gtk.StringList({ strings: languageNames });
+        const currentLanguage = settings.get_string("language") || 'auto';
+        const languageRow = new Adw.ComboRow({
+            title: _g("Interface Language"),
+            subtitle: _g("Extension will reload after changing language"),
+            model: languageModel,
+            selected: getLanguageIndex(currentLanguage)
+        });
+        
+        languageGroup.add(languageRow);
+        this.add(languageGroup);
 
         const unitGroup = new Adw.PreferencesGroup({
             title: _g("Units"),
@@ -65,10 +86,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             model: tempUnits,
             selected: settings.get_enum("temp-unit") - 1,
         });
-        tempRow.connect("notify::selected", () => {
-            settings.set_enum("temp-unit", tempRow.selected + 1);
-            settings.apply();
-        });
         unitGroup.add(tempRow);
 
         const speedUnits = new Gtk.StringList({ strings: [
@@ -78,10 +95,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             title: _g("Speed"),
             model: speedUnits,
             selected: settings.get_enum("speed-unit") - 1
-        });
-        speedRow.connect("notify::selected", () => {
-            settings.set_enum("speed-unit", speedRow.selected + 1);
-            settings.apply();
         });
         unitGroup.add(speedRow);
 
@@ -93,10 +106,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             model: pressureUnits,
             selected: settings.get_enum("pressure-unit") - 1
         });
-        pressureRow.connect("notify::selected", () => {
-            settings.set_enum("pressure-unit", pressureRow.selected + 1);
-            settings.apply();
-        });
         unitGroup.add(pressureRow);
 
         const rainMeasurementUnits = new Gtk.StringList({ strings: [
@@ -106,10 +115,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             title: _g("Rain Measurement"),
             model: rainMeasurementUnits,
             selected: settings.get_enum("rain-measurement-unit") - 1
-        });
-        rainMeasurementRow.connect("notify::selected", () => {
-            settings.set_enum("rain-measurement-unit", rainMeasurementRow.selected + 1);
-            settings.apply();
         });
         unitGroup.add(rainMeasurementRow);
 
@@ -121,10 +126,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             model: distanceUnits,
             selected: settings.get_enum("distance-unit") - 1
         });
-        distanceRow.connect("notify::selected", () => {
-            settings.set_enum("distance-unit", distanceRow.selected + 1);
-            settings.apply();
-        });
         unitGroup.add(distanceRow);
 
         // If unit preset is not custom, most unit rows shouldn't be shown
@@ -135,14 +136,6 @@ export class GeneralPage extends Adw.PreferencesPage {
         const unitPresetInverse = unitPresetFromEnumMap.reduce<number[]>(
             (out, v, i) => (out[v] = i, out), []
         );
-        unitPresetRow.connect("notify::selected", () => {
-            const val = unitPresetInverse[unitPresetRow.selected];
-            setVisibilites(val === 0, tempRow, speedRow, pressureRow,
-                rainMeasurementRow, distanceRow);
-
-            settings.set_enum("unit-preset", val);
-            settings.apply();
-        });
 
         const directionUnits = new Gtk.StringList({ strings: [
             _g("Degrees"), _g("Eight-Point Compass")
@@ -151,10 +144,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             title: _g("Direction"),
             model: directionUnits,
             selected: settings.get_enum("direction-unit") - 1
-        });
-        directionRow.connect("notify::selected", () => {
-            settings.set_enum("direction-unit", directionRow.selected + 1);
-            settings.apply();
         });
         unitGroup.add(directionRow);
         this.add(unitGroup);
@@ -194,11 +183,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             title: _g("Provider"),
             model: myLocProvs,
             selected: myLocProvFromEnum[settings.get_enum("my-loc-provider")]
-        });
-        myLocRow.connect("notify::selected", () => {
-            const myLocProvToEnum = [ 4, 1, 2, 3 ];
-            settings.set_enum("my-loc-provider", myLocProvToEnum[myLocRow.selected]);
-            settings.apply();
         });
         myLocGroup.add(myLocRow);
 
@@ -256,10 +240,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             model: themeModel,
             selected: Math.max(themes.indexOf(settings.get_string("theme")), 0)
         });
-        themeRow.connect("notify::selected", (w : Adw.ComboRow) => {
-            settings.set_string("theme", themes[w.selected]);
-            settings.apply();
-        });
         panelGroup.add(themeRow);
         const panelBoxModel = new Gtk.StringList({ strings: [
             _g("Right"), _g("Center"), _g("Left")
@@ -268,13 +248,6 @@ export class GeneralPage extends Adw.PreferencesPage {
             title: _g("Side of Panel"),
             model: panelBoxModel,
             selected: settings.get_enum("panel-box")
-        });
-        panelBoxRow.connect("notify::selected", () => {
-            settings.set_enum("panel-box", panelBoxRow.selected);
-            // Auto-adjust panel offset based on panel position
-            const offsetValues = [0, 50, 100];
-            settings.set_double("panel-offset", offsetValues[panelBoxRow.selected]);
-            settings.apply();
         });
         panelGroup.add(panelBoxRow);
         const panelPriorityRow = new Adw.SpinRow({
@@ -306,7 +279,7 @@ export class GeneralPage extends Adw.PreferencesPage {
                 upper: 0.0,
                 step_increment: 5.0,
                 page_increment: 10.0,
-                value: settings.get_double("panel-offset")
+                value: -settings.get_double("panel-offset")
             }),
             digits: 0,
             round_digits: OFFSET_STEP,
@@ -319,7 +292,7 @@ export class GeneralPage extends Adw.PreferencesPage {
 
         panelOffsetRow.add_suffix(panelOffsetScale);
         panelOffsetRow.set_activatable_widget(panelOffsetScale);
-        panelOffsetScale.adjustment.connect("notify::value", a => {
+        const panelOffsetAdjustmentHandler = panelOffsetScale.adjustment.connect("notify::value", a => {
             if(a.value % OFFSET_STEP !== 0) {
                 a.value = Math.round(a.value / OFFSET_STEP) * OFFSET_STEP;
             }
@@ -330,7 +303,10 @@ export class GeneralPage extends Adw.PreferencesPage {
         settings.connect("changed", (_, key) => {
             if(key === "panel-offset") {
                 const v = settings.get_double("panel-offset");
+                // Block the adjustment handler to prevent infinite loop
+                panelOffsetScale.adjustment.block_signal_handler(panelOffsetAdjustmentHandler);
                 panelOffsetScale.adjustment.value = -v;
+                panelOffsetScale.adjustment.unblock_signal_handler(panelOffsetAdjustmentHandler);
             }
         });
         panelGroup.add(panelOffsetRow);
@@ -380,6 +356,196 @@ export class GeneralPage extends Adw.PreferencesPage {
         panelGroup.add(hideErrPopupRow);
 
         this.add(panelGroup);
+
+        // Track signal handlers to block them during language updates
+        let languageRowHandlerId: number;
+        let unitPresetRowHandlerId: number;
+        let tempRowHandlerId: number;
+        let speedRowHandlerId: number;
+        let pressureRowHandlerId: number;
+        let rainMeasurementRowHandlerId: number;
+        let distanceRowHandlerId: number;
+        let directionRowHandlerId: number;
+        let themeRowHandlerId: number;
+        let panelBoxRowHandlerId: number;
+        let myLocRowHandlerId: number;
+
+        // Connect signals and store handler IDs
+        languageRowHandlerId = languageRow.connect("notify::selected", () => {
+            console.log(`[SimpleWeather] languageRow selected changed to: ${languageRow.selected}`);
+            const selectedLangCode = AVAILABLE_LANGUAGES[languageRow.selected].code;
+            console.log(`[SimpleWeather] Setting language to: ${selectedLangCode}`);
+            settings.set_string("language", selectedLangCode);
+            settings.apply();
+            
+            // Apply the language change immediately
+            setLanguage(selectedLangCode);
+        });
+
+        tempRowHandlerId = tempRow.connect("notify::selected", () => {
+            settings.set_enum("temp-unit", tempRow.selected + 1);
+            settings.apply();
+        });
+
+        speedRowHandlerId = speedRow.connect("notify::selected", () => {
+            settings.set_enum("speed-unit", speedRow.selected + 1);
+            settings.apply();
+        });
+
+        pressureRowHandlerId = pressureRow.connect("notify::selected", () => {
+            settings.set_enum("pressure-unit", pressureRow.selected + 1);
+            settings.apply();
+        });
+
+        rainMeasurementRowHandlerId = rainMeasurementRow.connect("notify::selected", () => {
+            settings.set_enum("rain-measurement-unit", rainMeasurementRow.selected + 1);
+            settings.apply();
+        });
+
+        distanceRowHandlerId = distanceRow.connect("notify::selected", () => {
+            settings.set_enum("distance-unit", distanceRow.selected + 1);
+            settings.apply();
+        });
+
+        directionRowHandlerId = directionRow.connect("notify::selected", () => {
+            settings.set_enum("direction-unit", directionRow.selected + 1);
+            settings.apply();
+        });
+
+        themeRowHandlerId = themeRow.connect("notify::selected", (w : Adw.ComboRow) => {
+            settings.set_string("theme", themes[w.selected]);
+            settings.apply();
+        });
+
+        panelBoxRowHandlerId = panelBoxRow.connect("notify::selected", () => {
+            settings.set_enum("panel-box", panelBoxRow.selected);
+            // Auto-adjust panel offset based on panel position
+            const offsetValues = [0, 50, 100];
+            settings.set_double("panel-offset", offsetValues[panelBoxRow.selected]);
+            settings.apply();
+        });
+
+        myLocRowHandlerId = myLocRow.connect("notify::selected", () => {
+            const myLocProvToEnum = [ 4, 1, 2, 3 ];
+            settings.set_enum("my-loc-provider", myLocProvToEnum[myLocRow.selected]);
+            settings.apply();
+        });
+
+        unitPresetRowHandlerId = unitPresetRow.connect("notify::selected", () => {
+            const val = unitPresetInverse[unitPresetRow.selected];
+            setVisibilites(val === 0, tempRow, speedRow, pressureRow,
+                rainMeasurementRow, distanceRow);
+
+            settings.set_enum("unit-preset", val);
+            settings.apply();
+        });
+
+        // Update all translatable content when language changes
+        onLanguageChange(() => {
+            this.title = _g("General");
+            
+            languageGroup.title = _g("Language");
+            languageGroup.description = _g("Select the interface language");
+            languageRow.title = _g("Interface Language");
+            languageRow.subtitle = _g("Extension will reload after changing language");
+            
+            unitGroup.title = _g("Units");
+            unitGroup.description = _g("Configure units of measurement");
+            unitPresetRow.title = _g("Units");
+            tempRow.title = _g("Temperature");
+            speedRow.title = _g("Speed");
+            pressureRow.title = _g("Pressure");
+            rainMeasurementRow.title = _g("Rain Measurement");
+            distanceRow.title = _g("Distance");
+            directionRow.title = _g("Direction");
+            
+            weatherServiceGroup.title = _g("Weather Service");
+            weatherServiceGroup.description = _g("Configure how the weather is attained");
+            wProvRow.title = _g("Weather Provider");
+            
+            myLocGroup.title = _g("My Location");
+            myLocGroup.description = _g("Configure how your location is found");
+            myLocRow.title = _g("Provider");
+            myLocRefresh.title = _g("Refresh Interval (Minutes)");
+            
+            a11yGroup.title = _g("Accessibility");
+            a11yGroup.description = _g("Configure accessibility features");
+            hiContrastRow.title = _g("High Contrast");
+            
+            panelGroup.title = _g("Panel");
+            panelGroup.description = _g("Configure the panel and pop-up");
+            themeRow.title = _g("Theme");
+            panelBoxRow.title = _g("Side of Panel");
+            panelPriorityRow.title = _g("Order in Panel");
+            panelOffsetRow.title = _g("Pop-Up Offset");
+            panelOffsetRow.subtitle = _g("Horizontal pop-up offset from 0\u2013100.");
+            useSymbolicRow.title = _g("Use Symbolic Icons in Panel");
+            alwaysPackagedRow.title = _g("Always Use Packaged Icons");
+            showRefreshButton.title = _g("Show Refresh Button");
+            hideErrPopupRow.title = _g("Hide Error Popup");
+            hideErrPopupRow.subtitle = _g("If the popup just says Error, don't even show it.");
+            
+            // Update dropdown StringLists - save selections and restore after update
+            const savedSelections = {
+                unitPreset: unitPresetRow.selected,
+                temp: tempRow.selected,
+                direction: directionRow.selected,
+                theme: themeRow.selected,
+                panelBox: panelBoxRow.selected,
+                myLoc: myLocRow.selected
+            };
+            
+            // Block all handlers during update to prevent loops
+            unitPresetRow.block_signal_handler(unitPresetRowHandlerId);
+            tempRow.block_signal_handler(tempRowHandlerId);
+            directionRow.block_signal_handler(directionRowHandlerId);
+            themeRow.block_signal_handler(themeRowHandlerId);
+            panelBoxRow.block_signal_handler(panelBoxRowHandlerId);
+            myLocRow.block_signal_handler(myLocRowHandlerId);
+            
+            try {
+                unitPresetUnits.splice(0, unitPresetUnits.get_n_items(), [
+                    _g("US"), _g("UK"), _g("Metric"), _g("Nordic"), _g("Custom")
+                ]);
+                unitPresetRow.selected = savedSelections.unitPreset;
+                
+                tempUnits.splice(0, tempUnits.get_n_items(), [
+                    _g("Fahrenheit"), _g("Celsius")
+                ]);
+                tempRow.selected = savedSelections.temp;
+                
+                directionUnits.splice(0, directionUnits.get_n_items(), [
+                    _g("Degrees"), _g("Eight-Point Compass")
+                ]);
+                directionRow.selected = savedSelections.direction;
+                
+                themeModel.splice(0, themeModel.get_n_items(), [
+                    _g("System"), _g("Light"), _g("Afterdark"), _g("Immersive")
+                ]);
+                themeRow.selected = savedSelections.theme;
+                
+                panelBoxModel.splice(0, panelBoxModel.get_n_items(), [
+                    _g("Right"), _g("Center"), _g("Left")
+                ]);
+                panelBoxRow.selected = savedSelections.panelBox;
+                
+                myLocProvs.splice(0, myLocProvs.get_n_items(), [
+                    `${_g("Online")} - ipapi.co`,
+                    `${_g("Online")} - IPinfo`,
+                    `${_g("System")} - Geoclue`,
+                    _g("Disable")
+                ]);
+                myLocRow.selected = savedSelections.myLoc;
+            } finally {
+                // Always unblock handlers
+                unitPresetRow.unblock_signal_handler(unitPresetRowHandlerId);
+                tempRow.unblock_signal_handler(tempRowHandlerId);
+                directionRow.unblock_signal_handler(directionRowHandlerId);
+                themeRow.unblock_signal_handler(themeRowHandlerId);
+                panelBoxRow.unblock_signal_handler(panelBoxRowHandlerId);
+                myLocRow.unblock_signal_handler(myLocRowHandlerId);
+            }
+        });
     }
 
 }
